@@ -1,0 +1,7 @@
+# ข้อความ: เก็บใน git เป็น LF เสมอ (Windows/Mac/Linux ได้ไฟล์เหมือนกัน)
+* text=auto eol=lf
+*.ps1 text eol=crlf
+
+# ไฟล์ฟอนต์เป็น binary ห้ามแปลง line ending
+*.ttf binary
+*.woff binary

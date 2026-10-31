@@ -1,0 +1,26 @@
+# ---- ไฟล์ลับ: รหัส WiFi / คีย์ต่างๆ (ห้ามขึ้น git) ----
+include/secrets.h
+secrets.h
+*.secret
+.env
+.env.*
+
+# ---- ผลการ build ของ PlatformIO ----
+.pio/
+*.bin
+*.elf
+*.map
+
+# ---- ค่าของ editor / ระบบ ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- cache ของเครื่องมือ (สคริปต์สร้างฟอนต์ใช้ Node.js / Python) ----
+node_modules/
+__pycache__/
+*.pyc
+*.log
