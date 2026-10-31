@@ -56,4 +56,10 @@ constexpr uint16_t VOLUME_DUTY[4] = {0, 24, 96, 512};  // OFF / LOW / MID / HIGH
 constexpr uint8_t VOLUME_DEFAULT = 2;                  // MID
 constexpr bool CLICK_SOUND = true;                     // เสียงติ๊กทุกครั้งที่แตะจอ
 
+// ---- PCF8574 (I2C) ----
+constexpr uint32_t IO_I2C_FREQ_HZ = 400000;
+constexpr uint32_t IO_POLL_MS = 20;           // อ่านสวิตช์ทุกกี่ ms
+constexpr uint32_t IO_RETRY_MS = 1000;        // ไม่พบอุปกรณ์: ลองต่อใหม่ทุกกี่ ms
+constexpr uint16_t IO_STEP_DEFAULT_MS = 200;  // ความเร็วเริ่มต้นของโหมดอนิเมชัน LED
+
 }  // namespace app

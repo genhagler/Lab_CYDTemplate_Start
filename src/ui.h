@@ -24,6 +24,7 @@ constexpr int UI_TAB_H = 34;  // ความสูงแถบแท็บด�
 void ui_init();
 
 // ---- แต่ละแท็บ (parent = หน้าของแท็บ, เลื่อนขึ้นลงได้) ----
+void ui_io_tab(lv_obj_t *tab);  // ui_io.cpp: LED + สวิตช์ผ่าน PCF8574
 void ui_display_tab(lv_obj_t *tab);
 void ui_touch_tab(lv_obj_t *tab);
 void ui_led_tab(lv_obj_t *tab);

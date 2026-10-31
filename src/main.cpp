@@ -198,6 +198,7 @@ void setup()
     hal::ledBegin();
     hal::soundBegin();
     hal::displayBegin();  // จอ + ค่าแก้จอที่บันทึกไว้ + ไฟหลังจอ
+    hal::ioBegin();       // I2C + PCF8574
     hal::touchBegin();    // โหลดค่า calibrate (ถ้ายังไม่มี หน้า calibrate จะขึ้นเองหลัง splash)
 
     lvglBegin();

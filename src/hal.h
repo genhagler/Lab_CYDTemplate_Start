@@ -69,6 +69,16 @@ void ledBegin();
 void ledSetRgb(uint8_t r, uint8_t g, uint8_t b);
 void ledGetRgb(uint8_t &r, uint8_t &g, uint8_t &b);
 
+// ---- PCF8574 I/O expander (hal_io.cpp) ----
+// LED0-3 = P0-P3 (sink), สวิตช์ 0-3 = P4-P7 (active-low) ทุกฟังก์ชันใช้ bit0-3 ของ mask: 1 = LED ติด / สวิตช์ถูกกด
+void ioBegin();
+void ioPoll(uint32_t now);  // อ่านสวิตช์ (ถ้าไม่พบอุปกรณ์จะลองต่อใหม่เป็นระยะ ไม่บล็อก UI)
+bool ioOnline();
+void ioSetLeds(uint8_t mask);
+uint8_t ioLeds();
+uint8_t ioSwitches();  // 0 เมื่อไม่พบอุปกรณ์
+uint8_t ioRaw();       // ไบต์ดิบที่อ่านได้จากชิป
+
 // ---- เซนเซอร์แสง ----
 int ldrRaw();  // 0-4095 (ยิ่งสว่างยิ่งต่ำ)
 
