@@ -20,13 +20,17 @@ struct Glow {
     lv_color_t color;
     int32_t v = 0;
     int shadow = 0;     // ความกว้างเงาเรืองแสงสูงสุด (px)
-    bool zoom = false;  // true = ขยาย/หดตามความสว่าง
+    lv_obj_t *fil = nullptr;  // ไส้หลอด (lv_line) ถ้ามี: เทา -> ขาวอมเหลืองตามความสว่าง
+    uint32_t offBg = 0x232834;      // สีตอนดับ (ป้ายสวิตช์ใช้ค่านี้ หลอดไฟตั้งค่าเอง)
+    uint32_t offBorder = 0x3A4150;
 };
 
 constexpr int N = 4;
 constexpr uint32_t LED_COLORS[N] = {0xFF5252, 0xFFB300, 0x39E58C, 0x38BDF8};
-constexpr uint32_t OFF_BG = 0x232834;
-constexpr uint32_t OFF_BORDER = 0x3A4150;
+constexpr uint32_t BULB_OFF_BG = 0x2E3542;      // กระจกหลอดตอนยังไม่เปล่งแสง
+constexpr uint32_t BULB_OFF_BORDER = 0x7A8494;  // ขอบแก้ว
+constexpr uint32_t FIL_OFF = 0x7D8794;
+constexpr uint32_t FIL_ON = 0xFFF6D5;
 
 Glow gLed[N], gSw[N];
 lv_obj_t *gLedState[N], *gSwState[N];
@@ -45,14 +49,14 @@ bool gLastOnline = false;
 void applyGlow(Glow &g)
 {
     const int b = LV_CLAMP(0, g.v, 255);
-    lv_obj_set_style_bg_color(g.obj, lv_color_mix(g.color, lv_color_hex(OFF_BG), b), 0);
-    lv_obj_set_style_border_color(g.obj, lv_color_mix(lv_color_white(), lv_color_hex(OFF_BORDER), b), 0);
+    lv_obj_set_style_bg_color(g.obj, lv_color_mix(g.color, lv_color_hex(g.offBg), b), 0);
+    lv_obj_set_style_border_color(g.obj, lv_color_mix(lv_color_white(), lv_color_hex(g.offBorder), b), 0);
+    if (g.fil != nullptr) lv_obj_set_style_line_color(g.fil, lv_color_mix(lv_color_hex(FIL_ON), lv_color_hex(FIL_OFF), b), 0);
     const int w = b * g.shadow / 255;
     lv_obj_set_style_shadow_width(g.obj, w, 0);
     lv_obj_set_style_shadow_spread(g.obj, w / 4, 0);
     lv_obj_set_style_shadow_color(g.obj, g.color, 0);
     lv_obj_set_style_shadow_opa(g.obj, static_cast<lv_opa_t>(b * 200 / 255), 0);
-    if (g.zoom) lv_obj_set_style_transform_zoom(g.obj, 232 + g.v * 24 / 255, 0);
 }
 
 void glowExec(void *var, int32_t v)
@@ -295,19 +299,49 @@ void ui_io_tab(lv_obj_t *tab)
     lv_obj_t *row = evenRow(card);
     for (int i = 0; i < N; i++) {
         lv_obj_t *c = cell(row);
-        lv_obj_t *dot = lv_obj_create(c);
-        lv_obj_remove_style_all(dot);
-        lv_obj_set_size(dot, 52, 52);
-        lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
-        lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
-        lv_obj_set_style_border_width(dot, 3, 0);
-        lv_obj_add_flag(dot, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_clear_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_add_event_cb(dot, onLed, LV_EVENT_CLICKED, reinterpret_cast<void *>(static_cast<intptr_t>(i)));
-        gLed[i].obj = dot;
+        // ---- หลอดไฟ: ตัวรับแตะ (56x68) ประกอบด้วย คอหลอด / กระจก / ไส้หลอด / แสงสะท้อน / เกลียว ----
+        lv_obj_t *bulb = lv_obj_create(c);
+        lv_obj_remove_style_all(bulb);
+        lv_obj_set_size(bulb, 56, 68);
+        lv_obj_add_flag(bulb, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_clear_flag(bulb, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_add_event_cb(bulb, onLed, LV_EVENT_CLICKED, reinterpret_cast<void *>(static_cast<intptr_t>(i)));
+
+        auto part = [bulb](int w, int h, int x, int y, uint32_t color, int radius) {
+            lv_obj_t *o = lv_obj_create(bulb);
+            lv_obj_remove_style_all(o);
+            lv_obj_clear_flag(o, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  // ให้การแตะไปถึง bulb
+            lv_obj_set_size(o, w, h);
+            lv_obj_set_pos(o, x, y);
+            lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_color(o, lv_color_hex(color), 0);
+            lv_obj_set_style_radius(o, radius, 0);
+            return o;
+        };
+        part(22, 10, 17, 42, 0x6C7686, 3);                           // คอหลอด (อยู่หลังกระจก)
+        lv_obj_t *glass = part(46, 46, 5, 0, BULB_OFF_BG, LV_RADIUS_CIRCLE);  // กระจก
+        lv_obj_set_style_border_width(glass, 2, 0);
+
+        static const lv_point_t FIL_PTS[] = {{0, 26}, {0, 14}, {5, 7}, {9, 14}, {13, 7}, {17, 14}, {22, 7}, {22, 14}, {22, 26}};
+        lv_obj_t *fil = lv_line_create(bulb);
+        lv_obj_clear_flag(fil, LV_OBJ_FLAG_CLICKABLE);
+        lv_line_set_points(fil, FIL_PTS, sizeof(FIL_PTS) / sizeof(FIL_PTS[0]));
+        lv_obj_set_pos(fil, 17, 16);
+        lv_obj_set_style_line_width(fil, 2, 0);
+        lv_obj_set_style_line_rounded(fil, true, 0);
+
+        lv_obj_t *shine = part(8, 15, 13, 8, 0xFFFFFF, LV_RADIUS_CIRCLE);  // แสงสะท้อนบนกระจก
+        lv_obj_set_style_bg_opa(shine, LV_OPA_40, 0);
+        part(28, 7, 14, 51, 0xA3ACB8, 2);  // เกลียวหลอด
+        part(28, 7, 14, 58, 0x7B8591, 2);
+        part(12, 4, 22, 64, 0x4A5260, 2);  // ปลายขั้ว
+
+        gLed[i].obj = glass;
+        gLed[i].fil = fil;
         gLed[i].color = lv_color_hex(LED_COLORS[i]);
-        gLed[i].shadow = 24;
-        gLed[i].zoom = true;
+        gLed[i].shadow = 26;
+        gLed[i].offBg = BULB_OFF_BG;
+        gLed[i].offBorder = BULB_OFF_BORDER;
         gLed[i].v = 0;
         applyGlow(gLed[i]);
         char name[8];
